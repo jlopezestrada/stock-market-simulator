@@ -1,9 +1,8 @@
-from os import wait
 from fastapi import APIRouter, HTTPException, status
 from uuid import UUID, uuid4
 from typing import Dict
 
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_201_CREATED
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_200_OK
 from ..schemas import (
     StockTrade,
     Portfolio,
@@ -32,6 +31,7 @@ def _apply_trade(portfolio: Portfolio, trade: StockTrade) -> None:
     )
 
     # Check operation type BUY or SELL
+    # BUY
     if trade.trade_type is TradeType.BUY:
         cost = shares * price
         if portfolio.cash < cost:
@@ -71,4 +71,29 @@ def create_session() -> SessionState:
     session_id = uuid4()
     session_data = SessionData()
     _session_store[session_id] = session_data
+    return SessionState(session_id=session_id, data=session_data)
+
+
+@router.get("/sessions/{session_id}", response_model=SessionState)
+def get_session(session_id: UUID) -> SessionState:
+    session_data = _get_session(session_id)
+    return SessionState(session_id=session_id, data=session_data)
+
+
+@router.get(
+    "/sessions/{session_id}/portfolio",
+    status_code=HTTP_200_OK,
+    response_model=Portfolio,
+)
+def get_portolio(session_id: UUID) -> Portfolio:
+    session_data = _get_session(session_id)
+    return session_data.portfolio
+
+
+@router.post(
+    "/sessions/{session_id}/trade", status_code=HTTP_200_OK, response_model=SessionState
+)
+def execute_trade(session_id: UUID, trade: StockTrade) -> SessionState:
+    session_data = _get_session(session_id)
+    _apply_trade(session_data.portfolio, trade)
     return SessionState(session_id=session_id, data=session_data)
