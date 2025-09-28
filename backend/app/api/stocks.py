@@ -1,9 +1,17 @@
+from os import wait
 from fastapi import APIRouter, HTTPException, status
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Dict
 
-from starlette.status import HTTP_400_BAD_REQUEST
-from ..schemas import StockTrade, Portfolio, TradeType, SessionData, Holding
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_201_CREATED
+from ..schemas import (
+    StockTrade,
+    Portfolio,
+    TradeType,
+    SessionData,
+    SessionState,
+    Holding,
+)
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
@@ -56,3 +64,11 @@ def _apply_trade(portfolio: Portfolio, trade: StockTrade) -> None:
     portfolio.cash += proceeds
     if existing.shares == 0:
         portfolio.holdings.remove(existing)
+
+
+@router.post("/sessions", status_code=HTTP_201_CREATED, response_model=SessionState)
+def create_session() -> SessionState:
+    session_id = uuid4()
+    session_data = SessionData()
+    _session_store[session_id] = session_data
+    return SessionState(session_id=session_id, data=session_data)

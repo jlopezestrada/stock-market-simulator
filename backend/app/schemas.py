@@ -1,3 +1,4 @@
+from uuid import UUID
 from enum import Enum
 from pydantic import BaseModel, Field
 
@@ -28,6 +29,14 @@ class SessionData(BaseModel):
     """Represents the data stored in the user session."""
 
     portfolio: Portfolio = Field(default_factory=Portfolio)
+
+
+# SessionState Schema
+class SessionState(BaseModel):
+    """Snapshot of the session to be returned by the API."""
+
+    session_id: UUID
+    data: SessionData
 
 
 # TradeType Schema
